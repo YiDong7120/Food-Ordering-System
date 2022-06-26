@@ -2,6 +2,7 @@ import classMeals as c
 
 layout = "{0:<10}{1:<10}{2:<30}"
 current_order = []
+item_price = []
 
 # the main function of the food ordering system
 def main_menu():
@@ -10,7 +11,7 @@ def main_menu():
         print("=" * 40)
         print(layout.format("", "Food Ordering System", ""))
         print("=" * 40)
-        main_lis = ["1. Order", "2. View order summary", "3. Payment", "4. Exit"]
+        main_lis = ["1. Order", "2. View order summary", "3. Payment", "4. Report", "5. Exit"]
         for i in main_lis:
             print(layout.format("", i, ""))
 
@@ -29,6 +30,10 @@ def main_menu():
             break
 
         elif (key == '4'):
+            view_report()
+            break
+
+        elif (key == '5'):
             print("\n" + "Exiting the food ordering system...")
             print("Thank you. Have a nice day!")
             break
@@ -123,7 +128,8 @@ def get_order(key, lisInfo, dicPrice):
                 key2 = str(input("\n" + "Choice: ")).upper()
                 if (key2 == 'Q'):
                     keyQuantity = int(input("Enter quantity: "))
-                    totalEachPrice = round(keyQuantity* price, 2)
+                    totalEachPrice = round(keyQuantity * price, 2)
+                    item_price.append(price)
                     current_order.append(dicOrder(Name=name, Num=keyQuantity, Price=totalEachPrice))
                     delete()
                     print("\n" + "You have chosen:")
@@ -145,6 +151,7 @@ def delete():
     for i in range(len(current_order)):
         if current_order[i]['Num'] == 0:
             del current_order[i]
+            del item_price[i]
             break
 
 # change the quantity of order item
@@ -204,11 +211,17 @@ def view_order():
 # calculate the total amount of customer's order items and printing receipt
 def pay_order():
     print("\n" + "Printing receipt....")
-    total = 0
+
+    receiptReadNum = open("ReceiptNum.txt", "r")
+    receipt_num = int(receiptReadNum.read())
+    receiptReadNum.close()
+
     layout1 = "{0:<30}{1:<10}{2:<10}"
+    total = 0
     receipt = open("Receipt.txt", "w")
     receipt.write(layout.format("\n" + "", "", " " * 4 + "RECEIPT"))
     receipt.write(layout.format("\n" + "", " " * 2 + "RESTAURANT BENR2822 ASSIGNMENT (G6)", ""))
+    receipt.write("\n" + "Receipt Number: #" + str(receipt_num))
     receipt.write('\n' + '=' * 52 + '\n')
     receipt.write(layout1.format("-ITEM-", "-QTY-", "-AMT (RM)-"))
     receipt.write('\n' + '=' * 52 + '\n')
@@ -224,6 +237,65 @@ def pay_order():
     receipt.write(layout.format("\n" + "", "", " " * 3 + "THANK YOU!"))
     receipt.close()
     print("\n" + "Thank you for using this system!")
+    write_report(receipt_num, total)
+
+# append the report for the order of each customer
+def write_report(receiptNumber, amount):
+    report = open("Report.txt", "a")
+    layout2 = "{0:<10}{1:<30}{2:<10}{3:<5}"
+    report.write("\n")
+    report.write(layout2.format("\n", "*" * 45, "", ""))
+    report.write(layout2.format("\n", "Receipt Number: #" + str(receiptNumber), "", ""))
+    report.write(layout2.format("\n", "." * 45, "", ""))
+    for item, price in list(zip(current_order, item_price)):
+        report.write(layout2.format("\n", item['Name'] , "RM " + str(price), "x " + str(item['Num'])))
+    report.write(layout2.format("\n", "." * 45, "", ""))
+    report.write(layout2.format("\n", "TOTAL PRICES: ", "RM " + str(amount), ""))
+    report.write(layout2.format("\n", "*" * 45, "", ""))
+    report.close()
+
+    receiptReadNum = open("ReceiptNum.txt", "w")
+    receiptNumber += 1
+    receiptReadNum.write(str(receiptNumber))
+    receiptReadNum.close()
+
+# staff has to login to view the report
+def view_report():
+    data = read_menu_file("staff-login.txt")
+    print('─' * 7)
+    print(" LOGIN")
+    print('─' * 7)
+    keyUser = str(input("Username: "))
+    keyPassword = int(input("Password: "))
+
+    for name, password in list(zip(data[1], data[2])):
+        if keyUser == name and keyPassword == password:
+            print("\n" + "Login successfully!")
+            print("\n" + "Printing report.....")
+            report = open("Report.txt", "r")
+            while True:
+                theline = report.readline()
+                if len(theline) == 0:
+                    break
+                print(theline)
+            report.close()
+            print("\n" + "*" * 23 + "END OF THE REPORT" + "*" * 23)
+            break
+    else:
+        print("\n" + "Invalid username or password!")
+        while True:
+            print("\n" + "(M). Main Menu \t (E). Exit")
+            key = str(input("Enter: ")).upper()
+            if key == 'M':
+                main_menu()
+                break
+            elif key == 'E':
+                print("\n" + "Exiting the food ordering system...")
+                print("Thank you. Have a nice day!")
+                break
+            else:
+                print("ERROR! Please enter again!")
+                continue
 
 # read the food and drink menu
 def read_menu_file(fileRead):
